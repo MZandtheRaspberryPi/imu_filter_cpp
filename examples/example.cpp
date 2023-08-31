@@ -1,3 +1,3 @@
 #include "filter.h"
 
-int main() { SaitoIMUSystemModel model; }
+int main() { SaitoIMUSystemModel model(); }

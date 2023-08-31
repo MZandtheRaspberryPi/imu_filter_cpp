@@ -9,8 +9,8 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
 
 find_package(Eigen3 REQUIRED)
 
-add_library(${PROJECT_NAME}_lib INTERFACE)
-target_include_directories(${PROJECT_NAME}_lib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${EIGEN3_INCLUDE_DIR})
+add_library(${PROJECT_NAME}_lib src/filter.cpp)
+target_include_directories(${PROJECT_NAME}_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${EIGEN3_INCLUDE_DIR})
 # target_link_libraries(${PROJECT_NAME}_lib INTERFACE )
 
 add_executable(${PROJECT_NAME}_example examples/example.cpp)
