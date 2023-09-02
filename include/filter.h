@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <iostream>
+#include <memory>
 
 typedef double m_t;
 typedef Eigen::Matrix<m_t, 3, 3> RotationMatrix;
@@ -30,11 +31,22 @@ class IMUNonLinearSystemModel {
 
   IMUNonLinearSystemModel();
   virtual ~IMUNonLinearSystemModel() = 0;
-  virtual AMatrix get_a_matrix();
-  virtual CMatrix get_c_matrix();
-  virtual StateMatrix transition_state();
-  virtual MeasurementMatrix get_measurement();
-  virtual MeasurementMatrix get_expected_measurment();
+  virtual AMatrix get_a_matrix(const StateMatrix& state,
+                               const SensorDataMatrix& angular_rotation,
+                               const m_t& delta_t) = 0;
+
+  virtual CMatrix get_c_matrix(const StateMatrix& state) = 0;
+
+  virtual StateMatrix transition_state(const StateMatrix& state,
+                                       const SensorDataMatrix& angular_rotation,
+                                       const m_t& delta_t) = 0;
+
+  virtual MeasurementMatrix get_measurement(
+      const StateMatrix& state, const SensorDataMatrix& accelerometer,
+      const SensorDataMatrix& magnetometer) = 0;
+
+  virtual MeasurementMatrix get_expected_measurment(
+      const StateMatrix& state) = 0;
 };
 
 class SaitoIMUSystemModel : public IMUNonLinearSystemModel<3, 4, m_t> {
@@ -45,26 +57,29 @@ class SaitoIMUSystemModel : public IMUNonLinearSystemModel<3, 4, m_t> {
   AMatrix get_a_matrix(
       const SaitoIMUSystemModel::StateMatrix& state,
       const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
-      const m_t& delta_t);
+      const m_t& delta_t) override;
 
-  CMatrix get_c_matrix(const SaitoIMUSystemModel::StateMatrix& state);
+  CMatrix get_c_matrix(const SaitoIMUSystemModel::StateMatrix& state) override;
 
   StateMatrix transition_state(
       const SaitoIMUSystemModel::StateMatrix& state,
       const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
-      const m_t& delta_t);
+      const m_t& delta_t) override;
 
   MeasurementMatrix get_measurement(
       const SaitoIMUSystemModel::StateMatrix& state,
       const SaitoIMUSystemModel::SensorDataMatrix& accelerometer,
-      const SaitoIMUSystemModel::SensorDataMatrix& magnetometer);
+      const SaitoIMUSystemModel::SensorDataMatrix& magnetometer) override;
 
-  MeasurementMatrix get_expected_measurment();
+  MeasurementMatrix get_expected_measurment(
+      const SaitoIMUSystemModel::StateMatrix& state) override;
 };
 
-template <size_t N, size_t M, typename T>
-class NonLinearFilter {
+template <typename T>
+class FilterNonLinearModel {
  public:
+  FilterNonLinearModel();
+  ~FilterNonLinearModel();
   virtual void predict() = 0;
   virtual void update() = 0;
   virtual void rotate_sensor_to_base_frame() = 0;
@@ -72,5 +87,7 @@ class NonLinearFilter {
   void predict_and_update();
 
  private:
-  IMUNonLinearSystemModel<N, M, T> system_model_;
+  std::shared_ptr<T> system_model_ptr_;
 };
+
+class EKFSaitoModel : public FilterNonLinearModel<SaitoIMUSystemModel> {};

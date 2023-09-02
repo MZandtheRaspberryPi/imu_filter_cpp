@@ -169,7 +169,22 @@ SaitoIMUSystemModel::MeasurementMatrix get_measurement(
   return measurement;
 }
 
-SaitoIMUSystemModel::MeasurementMatrix get_expected_measurment() {
-  SaitoIMUSystemModel::MeasurementMatrix measurement_matrix;
-  return measurement_matrix;
+SaitoIMUSystemModel::MeasurementMatrix get_expected_measurment(
+    const SaitoIMUSystemModel::StateMatrix& state) {
+  SaitoIMUSystemModel::MeasurementMatrix expected_measurement;
+
+  const m_t& phi = state(0, 0);
+  const m_t& theta = state(1, 0);
+  const m_t& psi = state(2, 0);
+
+  const m_t sin_theta = do_sin(theta);
+  const m_t cos_theta = do_cos(theta);
+  const m_t sin_phi = do_sin(phi);
+  const m_t cos_phi = do_cos(phi);
+
+  expected_measurement(1, 0) = GRAVITY * (-1 * sin_theta);
+  expected_measurement(2, 0) = GRAVITY * sin_phi * cos_theta;
+  expected_measurement(3, 0) = GRAVITY * cos_phi * cos_theta;
+  expected_measurement(0, 0) = psi;
+  return expected_measurement;
 }

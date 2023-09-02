@@ -8,9 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
 
 # find_package(Eigen3 REQUIRED)
-
 add_library(${PROJECT_NAME}_lib src/filter.cpp)
-target_include_directories(${PROJECT_NAME}_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ eigen/)
+target_include_directories(${PROJECT_NAME}_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/ ${CMAKE_CURRENT_SOURCE_DIR}/eigen/)
 
 add_executable(${PROJECT_NAME}_example examples/example.cpp)
-target_link_libraries(${PROJECT_NAME}_example  ${PROJECT_NAME}_lib)
+target_link_libraries(${PROJECT_NAME}_example ${PROJECT_NAME}_lib)
