@@ -111,6 +111,19 @@ int main(int argc, char *argv[]) {
       euler_angles->set_y(estimate_and_cov.state_estimate(1, 0));
       euler_angles->set_z(estimate_and_cov.state_estimate(2, 0));
 
+      imu_msgs::CovarianceMatrix *cov_matrix =
+          filter_msg.mutable_cov_matrix_filter();
+
+      int num_rows = static_cast<int>(estimate_and_cov.covariance.rows());
+      int num_cols = static_cast<int>(estimate_and_cov.covariance.cols());
+
+      for (int i = 0; i < num_rows; i++) {
+        imu_msgs::MatrixRow *row = cov_matrix->add_row();
+        for (int j = 0; j < num_cols; j++) {
+          row->add_val(estimate_and_cov.covariance(i, j));
+        }
+      }
+
       size_t msg_size = filter_msg.ByteSizeLong();
       uint8_t *msg_arr = new uint8_t[msg_size];
       filter_msg.SerializeToArray(msg_arr, msg_size);
