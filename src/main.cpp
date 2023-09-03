@@ -102,7 +102,10 @@ int main(int argc, char *argv[]) {
       }
 
       imu_msgs::ImuMsg filter_msg;
+
+      filter_msg.CopyFrom(msg);
       filter_msg.set_filter_timestamp(get_timestamp());
+
       imu_msgs::Triad *euler_angles = filter_msg.mutable_euler_angles_filter();
       euler_angles->set_x(estimate_and_cov.state_estimate(0, 0));
       euler_angles->set_y(estimate_and_cov.state_estimate(1, 0));
