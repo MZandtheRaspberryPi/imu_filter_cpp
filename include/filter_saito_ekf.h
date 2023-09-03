@@ -30,18 +30,19 @@ class SaitoIMUSystemModel : public IMUNonLinearSystemModel<3, 4, m_t> {
 
 class EKFSaitoModel : public FilterNonLinearModel<SaitoIMUSystemModel> {
  public:
-  EKFSaitoModel(const SaitoIMUSystemModel::StateCovarianceMatrix& Q,
+  EKFSaitoModel(const RotationMatrix& sensor_to_base,
+                const SaitoIMUSystemModel::StateCovarianceMatrix& Q,
                 const SaitoIMUSystemModel::MeasurementCovarianceMatrix& R);
   ~EKFSaitoModel();
   EKFSaitoModel::EstimateAndCovariance predict(
       const EKFSaitoModel::EstimateAndCovariance& prior_estimate_and_cov,
       const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
-      const m_t& delta_t);
+      const m_t& delta_t) override;
 
   EKFSaitoModel::EstimateAndCovariance update(
       const EKFSaitoModel::EstimateAndCovariance& prior_estimate_and_cov,
       const SaitoIMUSystemModel::SensorDataMatrix& accelerometer,
       const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
       const SaitoIMUSystemModel::SensorDataMatrix& magnetometer,
-      const m_t& delta_t);
+      const m_t& delta_t) override;
 };

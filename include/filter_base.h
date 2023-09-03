@@ -30,8 +30,8 @@ class IMUNonLinearSystemModel {
   typedef Eigen::Matrix<T, 3, 1> SensorDataMatrix;
   typedef Eigen::Matrix<T, M, M> MeasurementCovarianceMatrix;
 
-  IMUNonLinearSystemModel();
-  virtual ~IMUNonLinearSystemModel() = 0;
+  IMUNonLinearSystemModel(){};
+  virtual ~IMUNonLinearSystemModel(){};
   virtual AMatrix get_a_matrix(const StateMatrix& state,
                                const SensorDataMatrix& angular_rotation,
                                const m_t& delta_t) = 0;
@@ -58,15 +58,24 @@ class FilterNonLinearModel {
     typename T::StateCovarianceMatrix covariance;
   };
 
-  FilterNonLinearModel();
-  virtual ~FilterNonLinearModel();
+  FilterNonLinearModel(const RotationMatrix& sensor_to_base) {
+    sensor_to_base_rotation_ = sensor_to_base;
+  }
+  ~FilterNonLinearModel() {}
   virtual EstimateAndCovariance predict(
       const EstimateAndCovariance& prior_estimate_and_cov,
       const typename T::SensorDataMatrix& angular_rotation,
       const m_t& delta_t) = 0;
-  virtual EstimateAndCovariance update() = 0;
-  virtual typename T::SensorDataMatrix rotate_sensor_to_base_frame(
-      typename T::SensorDataMatrix sensor_data) = 0;
+  virtual EstimateAndCovariance update(
+      const EstimateAndCovariance& prior_estimate_and_cov,
+      const typename T::SensorDataMatrix& accelerometer,
+      const typename T::SensorDataMatrix& angular_rotation,
+      const typename T::SensorDataMatrix& magnetometer, const m_t& delta_t) = 0;
+
+  typename T::SensorDataMatrix rotate_sensor_to_base_frame(
+      const typename T::SensorDataMatrix& sensor_data) {
+    return sensor_to_base_rotation_ * sensor_data;
+  }
 
   EstimateAndCovariance predict_and_update();
 
@@ -74,4 +83,5 @@ class FilterNonLinearModel {
   std::unique_ptr<T> system_model_ptr_;
   typename T::StateCovarianceMatrix q_;
   typename T::MeasurementCovarianceMatrix r_;
+  RotationMatrix sensor_to_base_rotation_;
 };

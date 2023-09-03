@@ -3,7 +3,7 @@
 SaitoIMUSystemModel::SaitoIMUSystemModel() {}
 SaitoIMUSystemModel::~SaitoIMUSystemModel() {}
 
-SaitoIMUSystemModel::AMatrix get_a_matrix(
+SaitoIMUSystemModel::AMatrix SaitoIMUSystemModel::get_a_matrix(
     const SaitoIMUSystemModel::StateMatrix& state,
     const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
     const m_t& delta_t) {
@@ -51,7 +51,7 @@ SaitoIMUSystemModel::AMatrix get_a_matrix(
   return a_matrix;
 }
 
-SaitoIMUSystemModel::CMatrix get_c_matrix(
+SaitoIMUSystemModel::CMatrix SaitoIMUSystemModel::get_c_matrix(
     const SaitoIMUSystemModel::StateMatrix& state) {
   SaitoIMUSystemModel::CMatrix c_matrix;
 
@@ -80,7 +80,7 @@ SaitoIMUSystemModel::CMatrix get_c_matrix(
   return c_matrix;
 }
 
-SaitoIMUSystemModel::StateMatrix transition_state(
+SaitoIMUSystemModel::StateMatrix SaitoIMUSystemModel::transition_state(
     const SaitoIMUSystemModel::StateMatrix& state,
     const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
     const m_t& delta_t) {
@@ -111,7 +111,7 @@ SaitoIMUSystemModel::StateMatrix transition_state(
   return new_state;
 }
 
-SaitoIMUSystemModel::MeasurementMatrix get_measurement(
+SaitoIMUSystemModel::MeasurementMatrix SaitoIMUSystemModel::get_measurement(
     const SaitoIMUSystemModel::StateMatrix& state,
     const SaitoIMUSystemModel::SensorDataMatrix& accelerometer,
     const SaitoIMUSystemModel::SensorDataMatrix& magnetometer) {
@@ -164,7 +164,8 @@ SaitoIMUSystemModel::MeasurementMatrix get_measurement(
   return measurement;
 }
 
-SaitoIMUSystemModel::MeasurementMatrix get_expected_measurment(
+SaitoIMUSystemModel::MeasurementMatrix
+SaitoIMUSystemModel::get_expected_measurment(
     const SaitoIMUSystemModel::StateMatrix& state) {
   SaitoIMUSystemModel::MeasurementMatrix expected_measurement;
 
@@ -202,12 +203,17 @@ class FilterNonLinearModel {
 */
 
 EKFSaitoModel::EKFSaitoModel(
+
+    const RotationMatrix& sensor_to_base,
     const SaitoIMUSystemModel::StateCovarianceMatrix& Q,
-    const SaitoIMUSystemModel::MeasurementCovarianceMatrix& R) {
+    const SaitoIMUSystemModel::MeasurementCovarianceMatrix& R)
+    : FilterNonLinearModel<SaitoIMUSystemModel>(sensor_to_base) {
   system_model_ptr_ = std::make_unique<SaitoIMUSystemModel>();
   q_ = Q;
   r_ = R;
 }
+
+EKFSaitoModel::~EKFSaitoModel() {}
 
 EKFSaitoModel::EstimateAndCovariance EKFSaitoModel::predict(
     const EKFSaitoModel::EstimateAndCovariance& prior_estimate_and_cov,
