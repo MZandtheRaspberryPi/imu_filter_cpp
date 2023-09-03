@@ -26,6 +26,8 @@ int main(int argc, char *argv[]) {
   struct sigaction sig_int_handler;
   setup_sigint_handler(sig_int_handler);
 
+  delay(10000);
+
   SaitoIMUSystemModel::StateCovarianceMatrix Q;
   Q.setIdentity();
 
