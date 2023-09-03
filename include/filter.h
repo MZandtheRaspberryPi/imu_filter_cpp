@@ -23,11 +23,12 @@ template <size_t N, size_t M, typename T>
 class IMUNonLinearSystemModel {
  public:
   typedef Eigen::Matrix<T, N, 1> StateMatrix;
-  typedef Eigen::Matrix<T, N, N> CovarianceMatrix;
+  typedef Eigen::Matrix<T, N, N> StateCovarianceMatrix;
   typedef Eigen::Matrix<T, M, 1> MeasurementMatrix;
   typedef Eigen::Matrix<T, N, N> AMatrix;
   typedef Eigen::Matrix<T, M, N> CMatrix;
   typedef Eigen::Matrix<T, 3, 1> SensorDataMatrix;
+  typedef Eigen::Matrix<T, M, M> MeasurementCovarianceMatrix;
 
   IMUNonLinearSystemModel();
   virtual ~IMUNonLinearSystemModel() = 0;
@@ -78,16 +79,43 @@ class SaitoIMUSystemModel : public IMUNonLinearSystemModel<3, 4, m_t> {
 template <typename T>
 class FilterNonLinearModel {
  public:
+  struct EstimateAndCovariance {
+    typename T::StateMatrix state_estimate;
+    typename T::StateCovarianceMatrix covariance;
+  };
+
   FilterNonLinearModel();
-  ~FilterNonLinearModel();
-  virtual void predict() = 0;
-  virtual void update() = 0;
-  virtual void rotate_sensor_to_base_frame() = 0;
+  virtual ~FilterNonLinearModel();
+  virtual EstimateAndCovariance predict(
+      const EstimateAndCovariance& prior_estimate_and_cov,
+      const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
+      const m_t& delta_t) = 0;
+  virtual EstimateAndCovariance update() = 0;
+  virtual typename T::SensorDataMatrix rotate_sensor_to_base_frame(
+      typename T::SensorDataMatrix sensor_data) = 0;
 
-  void predict_and_update();
+  EstimateAndCovariance predict_and_update();
 
- private:
-  std::shared_ptr<T> system_model_ptr_;
+ protected:
+  std::unique_ptr<T> system_model_ptr_;
+  SaitoIMUSystemModel::StateCovarianceMatrix q_;
+  SaitoIMUSystemModel::MeasurementCovarianceMatrix r_;
 };
 
-class EKFSaitoModel : public FilterNonLinearModel<SaitoIMUSystemModel> {};
+class EKFSaitoModel : public FilterNonLinearModel<SaitoIMUSystemModel> {
+ public:
+  EKFSaitoModel(const SaitoIMUSystemModel::StateCovarianceMatrix& Q,
+                const SaitoIMUSystemModel::MeasurementCovarianceMatrix& R);
+  ~EKFSaitoModel();
+  EKFSaitoModel::EstimateAndCovariance predict(
+      const EKFSaitoModel::EstimateAndCovariance& prior_estimate_and_cov,
+      const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
+      const m_t& delta_t);
+
+  EKFSaitoModel::EstimateAndCovariance update(
+      const EKFSaitoModel::EstimateAndCovariance& prior_estimate_and_cov,
+      const SaitoIMUSystemModel::SensorDataMatrix& accelerometer,
+      const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
+      const SaitoIMUSystemModel::SensorDataMatrix& magnetometer,
+      const m_t& delta_t);
+};

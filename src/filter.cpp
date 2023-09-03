@@ -188,3 +188,93 @@ SaitoIMUSystemModel::MeasurementMatrix get_expected_measurment(
   expected_measurement(0, 0) = psi;
   return expected_measurement;
 }
+
+/*
+template <typename T>
+class FilterNonLinearModel {
+ public:
+  FilterNonLinearModel();
+  ~FilterNonLinearModel();
+  virtual void predict() = 0;
+  virtual void update() = 0;
+  virtual void rotate_sensor_to_base_frame() = 0;
+
+  void predict_and_update();
+
+ private:
+  std::shared_ptr<T> system_model_ptr_;
+};
+*/
+
+EKFSaitoModel::EKFSaitoModel(
+    const SaitoIMUSystemModel::StateCovarianceMatrix& Q,
+    const SaitoIMUSystemModel::MeasurementCovarianceMatrix& R) {
+  system_model_ptr_ = std::make_unique<SaitoIMUSystemModel>();
+  q_ = Q;
+  r_ = R;
+}
+
+EKFSaitoModel::EstimateAndCovariance EKFSaitoModel::predict(
+    const EKFSaitoModel::EstimateAndCovariance& prior_estimate_and_cov,
+    const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
+    const m_t& delta_t) {
+  SaitoIMUSystemModel::StateMatrix mu_t_given_t_minus_one =
+      system_model_ptr_->transition_state(prior_estimate_and_cov.state_estimate,
+                                          angular_rotation, delta_t);
+
+  SaitoIMUSystemModel::AMatrix a_matrix = system_model_ptr_->get_a_matrix(
+      prior_estimate_and_cov.state_estimate, angular_rotation, delta_t);
+
+  SaitoIMUSystemModel::StateCovarianceMatrix sigma_t_given_t_minus_one =
+      a_matrix * (prior_estimate_and_cov.covariance * a_matrix.transpose()) +
+      q_;
+
+  EKFSaitoModel::EstimateAndCovariance estimate_and_cov;
+  estimate_and_cov.state_estimate = mu_t_given_t_minus_one;
+  estimate_and_cov.covariance = sigma_t_given_t_minus_one;
+  return estimate_and_cov;
+}
+
+EKFSaitoModel::EstimateAndCovariance EKFSaitoModel::update(
+    const EKFSaitoModel::EstimateAndCovariance& estimate_and_cov,
+    const SaitoIMUSystemModel::SensorDataMatrix& accelerometer,
+    const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
+    const SaitoIMUSystemModel::SensorDataMatrix& magnetometer,
+    const m_t& delta_t) {
+  SaitoIMUSystemModel::MeasurementMatrix expected_measurement =
+      system_model_ptr_->get_expected_measurment(
+          estimate_and_cov.state_estimate);
+
+  SaitoIMUSystemModel::MeasurementMatrix measurement =
+      system_model_ptr_->get_measurement(estimate_and_cov.state_estimate,
+                                         accelerometer, magnetometer);
+
+  SaitoIMUSystemModel::MeasurementMatrix error_vs_estimate =
+      measurement - expected_measurement;
+
+  SaitoIMUSystemModel::CMatrix c_matrix =
+      system_model_ptr_->get_c_matrix(estimate_and_cov.state_estimate);
+
+  Eigen::Matrix<m_t, 3, 4> sigma_ct =
+      estimate_and_cov.covariance * c_matrix.transpose();
+  SaitoIMUSystemModel::MeasurementCovarianceMatrix c_sigma_ct =
+      c_matrix * sigma_ct;
+  SaitoIMUSystemModel::MeasurementCovarianceMatrix c_sigma_ct_plus_R =
+      c_sigma_ct + r_;
+  SaitoIMUSystemModel::MeasurementCovarianceMatrix error_scaling_paranthesis =
+      c_sigma_ct_plus_R.inverse();
+  Eigen::Matrix<m_t, 3, 4> error_scaling =
+      estimate_and_cov.covariance *
+      (c_matrix.transpose() * error_scaling_paranthesis);
+
+  SaitoIMUSystemModel::StateMatrix mu_t_given_t =
+      estimate_and_cov.state_estimate + error_scaling * error_vs_estimate;
+  SaitoIMUSystemModel::StateCovarianceMatrix sigma_t_given_t =
+      estimate_and_cov.covariance -
+      error_scaling * (c_matrix * estimate_and_cov.covariance);
+
+  EKFSaitoModel::EstimateAndCovariance update_estimate_and_cov;
+  update_estimate_and_cov.state_estimate = mu_t_given_t;
+  update_estimate_and_cov.covariance = sigma_t_given_t;
+  return update_estimate_and_cov;
+}
