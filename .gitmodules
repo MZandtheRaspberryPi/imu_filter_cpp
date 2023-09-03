@@ -1,3 +1,6 @@
 [submodule "eigen"]
 	path = eigen
 	url = https://gitlab.com/libeigen/eigen.git
+[submodule "imu_websockets"]
+	path = imu_websockets
+	url = git@github.com:MZandtheRaspberryPi/imu_websockets.git
