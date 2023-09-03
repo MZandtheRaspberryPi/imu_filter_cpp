@@ -60,6 +60,9 @@ int main(int argc, char *argv[]) {
         continue;
       }
 
+      if (!msg.has_timestamp()) {
+        continue;
+      }
       uint64_t cur_timestamp = msg.timestamp();
 
       if (last_timestamp == 0) {
@@ -69,33 +72,37 @@ int main(int argc, char *argv[]) {
 
       m_t delta_t = (cur_timestamp - last_timestamp) / 1000;
 
-      SaitoIMUSystemModel::SensorDataMatrix angular_accel{
-          msg.angular_acceleration().x(), msg.angular_acceleration().y(),
-          msg.angular_acceleration().z()};
+      if (msg.has_angular_acceleration()) {
+        SaitoIMUSystemModel::SensorDataMatrix angular_accel{
+            msg.angular_acceleration().x(), msg.angular_acceleration().y(),
+            msg.angular_acceleration().z()};
+        EKFSaitoModel::EstimateAndCovariance estimate_given_t_minus_one =
+            ekf_saito.predict(estimate_and_cov, angular_accel, delta_t);
+        estimate_and_cov = estimate_given_t_minus_one;
+      }
 
-      EKFSaitoModel::EstimateAndCovariance estimate_given_t_minus_one =
-          ekf_saito.predict(estimate_and_cov, angular_accel, delta_t);
+      if (msg.has_angular_acceleration() && msg.has_linear_acceleration() &&
+          msg.has_magnetometer_vector()) {
+        SaitoIMUSystemModel::SensorDataMatrix angular_accel{
+            msg.angular_acceleration().x(), msg.angular_acceleration().y(),
+            msg.angular_acceleration().z()};
+        SaitoIMUSystemModel::SensorDataMatrix accelerometer{
+            msg.linear_acceleration().x(), msg.linear_acceleration().y(),
+            msg.linear_acceleration().z()};
 
-      SaitoIMUSystemModel::SensorDataMatrix accelerometer{
-          msg.linear_acceleration().x(), msg.linear_acceleration().y(),
-          msg.linear_acceleration().z()};
+        SaitoIMUSystemModel::SensorDataMatrix magnetometer{
+            msg.magnetometer_vector().x(), msg.magnetometer_vector().y(),
+            msg.magnetometer_vector().z()};
 
-      SaitoIMUSystemModel::SensorDataMatrix magnetometer{
-          msg.magnetometer_vector().x(), msg.magnetometer_vector().y(),
-          msg.magnetometer_vector().z()};
+        EKFSaitoModel::EstimateAndCovariance estimate_given_t =
+            ekf_saito.update(estimate_and_cov, accelerometer, angular_accel,
+                             magnetometer, delta_t);
 
-      EKFSaitoModel::EstimateAndCovariance estimate_given_t =
-          ekf_saito.update(estimate_given_t_minus_one, accelerometer,
-                           angular_accel, magnetometer, delta_t);
+        estimate_and_cov = estimate_given_t;
+      }
 
-      estimate_and_cov = estimate_given_t;
-
-      imu_msgs::FilterMsg filter_msg;
-      filter_msg.set_timestamp(get_timestamp());
-      imu_msgs::ImuMsg *imu_msg_filter = filter_msg.mutable_imu_msg();
-
-      imu_msg_filter->CopyFrom(msg);
-
+      imu_msgs::ImuMsg filter_msg;
+      filter_msg.set_filter_timestamp(get_timestamp());
       imu_msgs::Triad *euler_angles = filter_msg.mutable_euler_angles_filter();
       euler_angles->set_x(estimate_and_cov.state_estimate(0, 0));
       euler_angles->set_y(estimate_and_cov.state_estimate(1, 0));
