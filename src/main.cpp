@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
       delete[] msg_arr;
 
       std::string debug_str = filter_msg.DebugString();
-      std::cout << debug_str << std::endl;
+      // std::cout << debug_str << std::endl;
     }
 
     delay(LOOP_DELAY_MS);
