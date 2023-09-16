@@ -109,9 +109,9 @@ int main(int argc, char *argv[]) {
       filter_msg.set_filter_timestamp(get_timestamp());
 
       imu_msgs::Triad *euler_angles = filter_msg.mutable_euler_angles_filter();
-      euler_angles->set_x(estimate_and_cov.state_estimate(0, 0));
-      euler_angles->set_y(estimate_and_cov.state_estimate(1, 0));
-      euler_angles->set_z(estimate_and_cov.state_estimate(2, 0));
+      euler_angles->set_x(rad_to_degrees(estimate_and_cov.state_estimate(0, 0)));
+      euler_angles->set_y(rad_to_degrees(estimate_and_cov.state_estimate(1, 0)));
+      euler_angles->set_z(rad_to_degrees(estimate_and_cov.state_estimate(2, 0)));
 
       imu_msgs::CovarianceMatrix *cov_matrix =
           filter_msg.mutable_cov_matrix_filter();
@@ -126,9 +126,9 @@ int main(int argc, char *argv[]) {
         }
       }
 
-      std::cout << "our x: " << static_cast<int>(estimate_and_cov.state_estimate(0, 0));
-      std::cout << " y: " << static_cast<int>(estimate_and_cov.state_estimate(1, 0));
-      std::cout << " z: " << static_cast<int>(estimate_and_cov.state_estimate(2, 0)) << std::endl;
+      std::cout << "our x: " << static_cast<int>(euler_angles->x());
+      std::cout << " y: " << static_cast<int>(euler_angles->y());
+      std::cout << " z: " << static_cast<int>(euler_angles->z()) << std::endl;
       std::cout << "their x: " << static_cast<int>(filter_msg.euler_angles().x());
       std::cout << " y: " << static_cast<int>(filter_msg.euler_angles().y());
       std::cout << " z: " << static_cast<int>(filter_msg.euler_angles().z()) << std::endl << std::endl;
