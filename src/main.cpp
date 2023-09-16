@@ -126,6 +126,13 @@ int main(int argc, char *argv[]) {
         }
       }
 
+      std::cout << "our x: " << static_cast<int>(estimate_and_cov.state_estimate(0, 0));
+      std::cout << " y: " << static_cast<int>(estimate_and_cov.state_estimate(1, 0));
+      std::cout << " z: " << static_cast<int>(estimate_and_cov.state_estimate(2, 0)) << std::endl;
+      std::cout << "their x: " << static_cast<int>(filter_msg.euler_angles().x());
+      std::cout << " y: " << static_cast<int>(filter_msg.euler_angles().y());
+      std::cout << " z: " << static_cast<int>(filter_msg.euler_angles().z());
+
       size_t msg_size = filter_msg.ByteSizeLong();
       uint8_t *msg_arr = new uint8_t[msg_size];
       filter_msg.SerializeToArray(msg_arr, msg_size);
