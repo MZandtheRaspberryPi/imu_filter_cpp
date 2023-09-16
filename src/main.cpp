@@ -41,6 +41,8 @@ int main(int argc, char *argv[]) {
 
   RotationMatrix sensor_to_base;
   sensor_to_base.setIdentity();
+  sensor_to_base(0, 0) = -1;
+  sensor_to_base(2, 2) = -1;
 
   EKFSaitoModel ekf_saito(sensor_to_base, Q, R);
 
