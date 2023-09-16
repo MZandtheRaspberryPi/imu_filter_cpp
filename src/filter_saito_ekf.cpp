@@ -171,7 +171,7 @@ SaitoIMUSystemModel::get_expected_measurment(
   const m_t& theta = state(1, 0);
   const m_t& psi = state(2, 0);
 
-  const m_t sin_theta = do_sing(theta);
+  const m_t sin_theta = do_sin(theta);
   const m_t cos_theta = do_cos(theta);
   const m_t sin_phi = do_sin(phi);
   const m_t cos_phi = do_cos(phi);
