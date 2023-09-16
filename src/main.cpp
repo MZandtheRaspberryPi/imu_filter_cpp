@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
       std::cout << " z: " << static_cast<int>(estimate_and_cov.state_estimate(2, 0)) << std::endl;
       std::cout << "their x: " << static_cast<int>(filter_msg.euler_angles().x());
       std::cout << " y: " << static_cast<int>(filter_msg.euler_angles().y());
-      std::cout << " z: " << static_cast<int>(filter_msg.euler_angles().z());
+      std::cout << " z: " << static_cast<int>(filter_msg.euler_angles().z()) << std::endl << std::endl;
 
       size_t msg_size = filter_msg.ByteSizeLong();
       uint8_t *msg_arr = new uint8_t[msg_size];

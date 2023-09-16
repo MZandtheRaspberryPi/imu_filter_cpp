@@ -4,7 +4,7 @@ RUN apt-get update
 ENV TZ=Europe/London
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN  apt-get install nano git cmake build-essential g++ libeigen3-dev libboost-all-dev -y
+RUN  apt-get install nano git cmake build-essential g++ libboost-all-dev -y
 
 COPY . /repo
 

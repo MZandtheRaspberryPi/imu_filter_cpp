@@ -151,10 +151,8 @@ SaitoIMUSystemModel::MeasurementMatrix SaitoIMUSystemModel::get_measurement(
   SaitoIMUSystemModel::SensorDataMatrix rotated_magnetometer =
       rotation_matrix * magnetometer;
 
-  // had to flip signs here to get it to line up... where in paper it was neg
-  // m_y, pos m_x.
-  const m_t& rotated_m_y = rotated_magnetometer(1, 0);
-  const m_t& rotated_m_x = -1 * rotated_magnetometer(0, 0);
+  const m_t& rotated_m_y = -1 * rotated_magnetometer(1, 0);
+  const m_t& rotated_m_x = rotated_magnetometer(0, 0);
 
   const m_t new_psi = do_arctan(rotated_m_y, rotated_m_x);
 
