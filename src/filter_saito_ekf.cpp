@@ -151,10 +151,8 @@ SaitoIMUSystemModel::MeasurementMatrix SaitoIMUSystemModel::get_measurement(
   SaitoIMUSystemModel::SensorDataMatrix rotated_magnetometer =
       rotation_matrix * magnetometer;
 
-  // had to flip signs here to get it to line up... where in paper it was neg
-  // m_y, pos m_x.
-  const m_t& rotated_m_y = rotated_magnetometer(1, 0);
-  const m_t& rotated_m_x = -1 * rotated_magnetometer(0, 0);
+  const m_t& rotated_m_y = -1 * rotated_magnetometer(1, 0);
+  const m_t& rotated_m_x = rotated_magnetometer(0, 0);
 
   const m_t new_psi = do_arctan(rotated_m_y, rotated_m_x);
 
@@ -219,12 +217,14 @@ EKFSaitoModel::EstimateAndCovariance EKFSaitoModel::predict(
     const EKFSaitoModel::EstimateAndCovariance& prior_estimate_and_cov,
     const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
     const m_t& delta_t) {
+  
+  SaitoIMUSystemModel::SensorDataMatrix transformed_angular_rotation = rotate_sensor_to_base_frame(angular_rotation);
   SaitoIMUSystemModel::StateMatrix mu_t_given_t_minus_one =
       system_model_ptr_->transition_state(prior_estimate_and_cov.state_estimate,
-                                          angular_rotation, delta_t);
+                                          transformed_angular_rotation, delta_t);
 
   SaitoIMUSystemModel::AMatrix a_matrix = system_model_ptr_->get_a_matrix(
-      prior_estimate_and_cov.state_estimate, angular_rotation, delta_t);
+      prior_estimate_and_cov.state_estimate, transformed_angular_rotation, delta_t);
 
   SaitoIMUSystemModel::StateCovarianceMatrix sigma_t_given_t_minus_one =
       a_matrix * (prior_estimate_and_cov.covariance * a_matrix.transpose()) +
@@ -242,13 +242,18 @@ EKFSaitoModel::EstimateAndCovariance EKFSaitoModel::update(
     const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
     const SaitoIMUSystemModel::SensorDataMatrix& magnetometer,
     const m_t& delta_t) {
+      
+  SaitoIMUSystemModel::SensorDataMatrix transformed_accelerometer = rotate_sensor_to_base_frame(accelerometer);
+  SaitoIMUSystemModel::SensorDataMatrix transformed_angular_rotation = rotate_sensor_to_base_frame(angular_rotation);
+  SaitoIMUSystemModel::SensorDataMatrix transformed_magnetometer = rotate_sensor_to_base_frame(magnetometer);
+  
   SaitoIMUSystemModel::MeasurementMatrix expected_measurement =
       system_model_ptr_->get_expected_measurment(
           estimate_and_cov.state_estimate);
 
   SaitoIMUSystemModel::MeasurementMatrix measurement =
       system_model_ptr_->get_measurement(estimate_and_cov.state_estimate,
-                                         accelerometer, magnetometer);
+                                         transformed_accelerometer, transformed_magnetometer);
 
   SaitoIMUSystemModel::MeasurementMatrix error_vs_estimate =
       measurement - expected_measurement;

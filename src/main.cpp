@@ -4,7 +4,7 @@
 #include "websocket_listener.h"
 
 bool EXIT_FLAG = false;
-const uint16_t LOOP_DELAY_MS = 10;
+const uint16_t LOOP_DELAY_MS = 2;
 
 void my_signal_handler(int s) {
   printf("Caught signal %d\n", s);
@@ -16,6 +16,34 @@ void setup_sigint_handler(struct sigaction &sig_int_handler) {
   sigemptyset(&sig_int_handler.sa_mask);
   sig_int_handler.sa_flags = 0;
   sigaction(SIGINT, &sig_int_handler, NULL);
+}
+
+imu_msgs::ImuMsg get_filter_imu_msg(
+    const imu_msgs::ImuMsg &imu_msg,
+    const EKFSaitoModel::EstimateAndCovariance &estimate_and_cov) {
+  imu_msgs::ImuMsg filter_msg;
+
+  filter_msg.CopyFrom(imu_msg);
+  filter_msg.set_filter_timestamp(get_timestamp());
+
+  imu_msgs::Triad *euler_angles = filter_msg.mutable_euler_angles_filter();
+  euler_angles->set_x(rad_to_degrees(estimate_and_cov.state_estimate(0, 0)));
+  euler_angles->set_y(rad_to_degrees(estimate_and_cov.state_estimate(1, 0)));
+  euler_angles->set_z(rad_to_degrees(estimate_and_cov.state_estimate(2, 0)));
+
+  imu_msgs::CovarianceMatrix *cov_matrix =
+      filter_msg.mutable_cov_matrix_filter();
+
+  int num_rows = static_cast<int>(estimate_and_cov.covariance.rows());
+  int num_cols = static_cast<int>(estimate_and_cov.covariance.cols());
+
+  for (int i = 0; i < num_rows; i++) {
+    imu_msgs::MatrixRow *row = cov_matrix->add_row();
+    for (int j = 0; j < num_cols; j++) {
+      row->add_val(estimate_and_cov.covariance(i, j));
+    }
+  }
+  return filter_msg;
 }
 
 int main(int argc, char *argv[]) {
@@ -41,6 +69,8 @@ int main(int argc, char *argv[]) {
 
   RotationMatrix sensor_to_base;
   sensor_to_base.setIdentity();
+  sensor_to_base(0, 0) = -1;
+  sensor_to_base(2, 2) = -1;
 
   EKFSaitoModel ekf_saito(sensor_to_base, Q, R);
 
@@ -72,7 +102,9 @@ int main(int argc, char *argv[]) {
         continue;
       }
 
-      m_t delta_t = (cur_timestamp - last_timestamp) / 1000;
+      m_t delta_t = static_cast<m_t>((cur_timestamp - last_timestamp)) /
+                    static_cast<m_t>(1000);
+      last_timestamp = cur_timestamp;
 
       if (msg.has_angular_acceleration()) {
         SaitoIMUSystemModel::SensorDataMatrix angular_accel{
@@ -103,34 +135,32 @@ int main(int argc, char *argv[]) {
         estimate_and_cov = estimate_given_t;
       }
 
-      imu_msgs::ImuMsg filter_msg;
-
-      filter_msg.CopyFrom(msg);
-      filter_msg.set_filter_timestamp(get_timestamp());
-
-      imu_msgs::Triad *euler_angles = filter_msg.mutable_euler_angles_filter();
-      euler_angles->set_x(estimate_and_cov.state_estimate(0, 0));
-      euler_angles->set_y(estimate_and_cov.state_estimate(1, 0));
-      euler_angles->set_z(estimate_and_cov.state_estimate(2, 0));
-
-      imu_msgs::CovarianceMatrix *cov_matrix =
-          filter_msg.mutable_cov_matrix_filter();
-
-      int num_rows = static_cast<int>(estimate_and_cov.covariance.rows());
-      int num_cols = static_cast<int>(estimate_and_cov.covariance.cols());
-
-      for (int i = 0; i < num_rows; i++) {
-        imu_msgs::MatrixRow *row = cov_matrix->add_row();
-        for (int j = 0; j < num_cols; j++) {
-          row->add_val(estimate_and_cov.covariance(i, j));
-        }
+      /*
+      if (estimate_and_cov.state_estimate.array().isNaN().all() ||
+          estimate_and_cov.covariance.array().isNaN().all())
+      {
+        estimate_and_cov.state_estimate.setZero();
+        estimate_and_cov.covariance.setIdentity();
       }
+      */
 
-      size_t msg_size = filter_msg.ByteSizeLong();
-      uint8_t *msg_arr = new uint8_t[msg_size];
-      filter_msg.SerializeToArray(msg_arr, msg_size);
-      broadcast_server.send_message(msg_arr, msg_size);
-      delete[] msg_arr;
+      imu_msgs::ImuMsg filter_msg =
+          get_filter_imu_msg(msg, estimate_and_cov);
+      const imu_msgs::Triad &our_euler_angles =
+          filter_msg.euler_angles_filter();
+/*
+      std::cout << "our x: " << static_cast<int>(our_euler_angles.x());
+      std::cout << " y: " << static_cast<int>(our_euler_angles.y());
+      std::cout << " z: " << static_cast<int>(our_euler_angles.z())
+                << std::endl;
+      std::cout << "their x: "
+                << static_cast<int>(filter_msg.euler_angles().x());
+      std::cout << " y: " << static_cast<int>(filter_msg.euler_angles().y());
+      std::cout << " z: " << static_cast<int>(filter_msg.euler_angles().z())
+                << std::endl
+                << std::endl;
+*/
+      broadcast_server.send_imu_msg(filter_msg);
 
       std::string debug_str = filter_msg.DebugString();
       // std::cout << debug_str << std::endl;

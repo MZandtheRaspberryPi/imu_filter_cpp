@@ -12,12 +12,14 @@ typedef Eigen::Matrix<m_t, 3, 3> RotationMatrix;
 
 #define PI 3.14159265
 #define M_ERR_VAL 0.0
-#define GRAVITY 9.81
+#define GRAVITY -9.81
 
 m_t do_cos(const m_t& angle);
 m_t do_sin(const m_t& angle);
 m_t do_tan(const m_t& angle);
 m_t do_arctan(const m_t& y, const m_t& x);
+
+m_t rad_to_degrees(const m_t& angle);
 
 template <size_t N, size_t M, typename T>
 class IMUNonLinearSystemModel {
