@@ -74,8 +74,8 @@ int main(int argc, char *argv[]) {
         continue;
       }
 
-      m_t delta_t = (cur_timestamp - last_timestamp) / 1000;
-      std::cout << "delta_t: " << delta_t << std::endl;
+      m_t delta_t = static_cast<m_t>((cur_timestamp - last_timestamp)) / static_cast<m_t>(1000);
+      last_timestamp = cur_timestamp;
 
       if (msg.has_angular_acceleration()) {
         SaitoIMUSystemModel::SensorDataMatrix angular_accel{
