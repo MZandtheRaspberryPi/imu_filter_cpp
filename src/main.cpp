@@ -146,10 +146,13 @@ int main(int argc, char *argv[]) {
 
       imu_msgs::ImuMsg filter_msg =
           get_filter_imu_msg(imu_msg, estimate_and_cov);
+      const imu_msgs::Triad &our_euler_angles =
+          filter_msg.euler_angles_filter();
 
-      std::cout << "our x: " << static_cast<int>(euler_angles->x());
-      std::cout << " y: " << static_cast<int>(euler_angles->y());
-      std::cout << " z: " << static_cast<int>(euler_angles->z()) << std::endl;
+      std::cout << "our x: " << static_cast<int>(our_euler_angles.x());
+      std::cout << " y: " << static_cast<int>(our_euler_angles.y());
+      std::cout << " z: " << static_cast<int>(our_euler_angles.z())
+                << std::endl;
       std::cout << "their x: "
                 << static_cast<int>(filter_msg.euler_angles().x());
       std::cout << " y: " << static_cast<int>(filter_msg.euler_angles().y());
