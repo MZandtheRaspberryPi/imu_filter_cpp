@@ -12,7 +12,7 @@ typedef Eigen::Matrix<m_t, 3, 3> RotationMatrix;
 
 #define PI 3.14159265
 #define M_ERR_VAL 0.0
-#define GRAVITY 9.81
+#define GRAVITY -9.81
 
 m_t do_cos(const m_t& angle);
 m_t do_sin(const m_t& angle);

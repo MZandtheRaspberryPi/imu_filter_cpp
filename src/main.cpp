@@ -145,10 +145,10 @@ int main(int argc, char *argv[]) {
       */
 
       imu_msgs::ImuMsg filter_msg =
-          get_filter_imu_msg(imu_msg, estimate_and_cov);
+          get_filter_imu_msg(msg, estimate_and_cov);
       const imu_msgs::Triad &our_euler_angles =
           filter_msg.euler_angles_filter();
-
+/*
       std::cout << "our x: " << static_cast<int>(our_euler_angles.x());
       std::cout << " y: " << static_cast<int>(our_euler_angles.y());
       std::cout << " z: " << static_cast<int>(our_euler_angles.z())
@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
       std::cout << " z: " << static_cast<int>(filter_msg.euler_angles().z())
                 << std::endl
                 << std::endl;
-
+*/
       broadcast_server.send_imu_msg(filter_msg);
 
       std::string debug_str = filter_msg.DebugString();
