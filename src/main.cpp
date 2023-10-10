@@ -74,7 +74,11 @@ int main(int argc, char *argv[]) {
 
   EKFSaitoModel ekf_saito(sensor_to_base, Q, R);
 
-  ListenerClient listener_server = ListenerClient();
+  PrintSettings print_settings;
+  print_settings.print_msgs = true;
+  print_settings.print_mode = PRINT_MODE::GYRO;
+  print_settings.messages_per_second = 25;
+  ListenerClient listener_server = ListenerClient(print_settings);
   std::string ip_address = "broadcaster";
   uint16_t port = 9000;
   listener_server.connect(ip_address, port);
@@ -144,22 +148,22 @@ int main(int argc, char *argv[]) {
       }
       */
 
-      imu_msgs::ImuMsg filter_msg =
-          get_filter_imu_msg(msg, estimate_and_cov);
+      imu_msgs::ImuMsg filter_msg = get_filter_imu_msg(msg, estimate_and_cov);
       const imu_msgs::Triad &our_euler_angles =
           filter_msg.euler_angles_filter();
-/*
-      std::cout << "our x: " << static_cast<int>(our_euler_angles.x());
-      std::cout << " y: " << static_cast<int>(our_euler_angles.y());
-      std::cout << " z: " << static_cast<int>(our_euler_angles.z())
-                << std::endl;
-      std::cout << "their x: "
-                << static_cast<int>(filter_msg.euler_angles().x());
-      std::cout << " y: " << static_cast<int>(filter_msg.euler_angles().y());
-      std::cout << " z: " << static_cast<int>(filter_msg.euler_angles().z())
-                << std::endl
-                << std::endl;
-*/
+      /*
+            std::cout << "our x: " << static_cast<int>(our_euler_angles.x());
+            std::cout << " y: " << static_cast<int>(our_euler_angles.y());
+            std::cout << " z: " << static_cast<int>(our_euler_angles.z())
+                      << std::endl;
+            std::cout << "their x: "
+                      << static_cast<int>(filter_msg.euler_angles().x());
+            std::cout << " y: " <<
+         static_cast<int>(filter_msg.euler_angles().y()); std::cout << " z: " <<
+         static_cast<int>(filter_msg.euler_angles().z())
+                      << std::endl
+                      << std::endl;
+      */
       broadcast_server.send_imu_msg(filter_msg);
 
       std::string debug_str = filter_msg.DebugString();
