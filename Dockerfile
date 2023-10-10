@@ -19,7 +19,6 @@ FROM ubuntu:22.04
 COPY --from=build /repo/build/imu_filter_cpp_main /entrypoint/imu_filter_cpp_main
 COPY --from=build /repo/build/imu_websockets/libimu_websockets_lib.so /usr/local/lib/
 COPY --from=build /usr/local/lib/libprotobuf.so.24.3.0 /usr/local/lib/
-
 ENV LD_LIBRARY_PATH=/usr/local/lib
 
 STOPSIGNAL SIGINT

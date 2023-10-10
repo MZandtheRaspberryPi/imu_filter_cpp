@@ -100,12 +100,13 @@ SaitoIMUSystemModel::StateMatrix SaitoIMUSystemModel::transition_state(
   const m_t cos_theta = do_cos(theta);
   const m_t sin_theta = do_sin(theta);
 
-  new_state[0, 0] = phi + delta_t * omega_x +
+
+  new_state(0, 0) = phi + delta_t * omega_x +
                     delta_t * (sin_phi * tan_theta * omega_y) +
                     cos_phi * tan_theta * omega_z * delta_t;
-  new_state[1, 0] =
+  new_state(1, 0) =
       theta + delta_t * (cos_phi * omega_y) - delta_t * (sin_psi * omega_z);
-  new_state[2, 0] = psi + delta_t * (sin_phi * 1 / cos_theta * omega_y) +
+  new_state(2, 0) = psi + delta_t * (sin_phi * 1 / cos_theta * omega_y) +
                     delta_t * (cos_phi * 1 / cos_theta * omega_z);
 
   return new_state;
@@ -217,12 +218,13 @@ EKFSaitoModel::EstimateAndCovariance EKFSaitoModel::predict(
     const EKFSaitoModel::EstimateAndCovariance& prior_estimate_and_cov,
     const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
     const m_t& delta_t) {
-  
+
   SaitoIMUSystemModel::SensorDataMatrix transformed_angular_rotation = rotate_sensor_to_base_frame(angular_rotation);
-  SaitoIMUSystemModel::StateMatrix mu_t_given_t_minus_one =
+  SaitoIMUSystemModel::StateMatrix mu_t_given_t_minus_one;
+  mu_t_given_t_minus_one.setZero();
+  mu_t_given_t_minus_one =
       system_model_ptr_->transition_state(prior_estimate_and_cov.state_estimate,
                                           transformed_angular_rotation, delta_t);
-
   SaitoIMUSystemModel::AMatrix a_matrix = system_model_ptr_->get_a_matrix(
       prior_estimate_and_cov.state_estimate, transformed_angular_rotation, delta_t);
 
@@ -275,6 +277,8 @@ EKFSaitoModel::EstimateAndCovariance EKFSaitoModel::update(
 
   SaitoIMUSystemModel::StateMatrix mu_t_given_t =
       estimate_and_cov.state_estimate + error_scaling * error_vs_estimate;
+  std::cout << "mu t given t " << std::endl;
+  std::cout << mu_t_given_t << std::endl;
   SaitoIMUSystemModel::StateCovarianceMatrix sigma_t_given_t =
       estimate_and_cov.covariance -
       error_scaling * (c_matrix * estimate_and_cov.covariance);

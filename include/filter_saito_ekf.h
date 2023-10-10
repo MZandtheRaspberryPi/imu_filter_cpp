@@ -7,24 +7,24 @@ class SaitoIMUSystemModel : public IMUNonLinearSystemModel<3, 4, m_t> {
   SaitoIMUSystemModel();
   ~SaitoIMUSystemModel();
 
-  AMatrix get_a_matrix(
+  SaitoIMUSystemModel::AMatrix get_a_matrix(
       const SaitoIMUSystemModel::StateMatrix& state,
       const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
       const m_t& delta_t) override;
 
-  CMatrix get_c_matrix(const SaitoIMUSystemModel::StateMatrix& state) override;
+  SaitoIMUSystemModel::CMatrix get_c_matrix(const SaitoIMUSystemModel::StateMatrix& state) override;
 
-  StateMatrix transition_state(
+  SaitoIMUSystemModel::StateMatrix transition_state(
       const SaitoIMUSystemModel::StateMatrix& state,
       const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
       const m_t& delta_t) override;
 
-  MeasurementMatrix get_measurement(
+  SaitoIMUSystemModel::MeasurementMatrix get_measurement(
       const SaitoIMUSystemModel::StateMatrix& state,
       const SaitoIMUSystemModel::SensorDataMatrix& accelerometer,
       const SaitoIMUSystemModel::SensorDataMatrix& magnetometer) override;
 
-  MeasurementMatrix get_expected_measurment(
+  SaitoIMUSystemModel::MeasurementMatrix get_expected_measurment(
       const SaitoIMUSystemModel::StateMatrix& state) override;
 };
 
