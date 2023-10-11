@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
   EKFSaitoModel ekf_saito(sensor_to_base, Q, R);
 
   PrintSettings print_settings;
-  print_settings.print_msgs = true;
+  print_settings.print_msgs = false;
   print_settings.print_mode = PRINT_MODE::ALL_SENSORS;
   print_settings.messages_per_second = 25;
   ListenerClient listener_server = ListenerClient(print_settings);
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
             msg.angular_acceleration().z()};
         EKFSaitoModel::EstimateAndCovariance estimate_given_t_minus_one =
             ekf_saito.predict(estimate_and_cov, angular_accel, delta_t);
-//        estimate_and_cov = estimate_given_t_minus_one;
+        estimate_and_cov = estimate_given_t_minus_one;
       }
 
       if (msg.has_angular_acceleration() && msg.has_linear_acceleration() &&

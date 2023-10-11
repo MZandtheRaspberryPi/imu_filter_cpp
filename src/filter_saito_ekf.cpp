@@ -1,3 +1,4 @@
+
 #include "filter_saito_ekf.h"
 
 SaitoIMUSystemModel::SaitoIMUSystemModel() {}
@@ -132,10 +133,20 @@ SaitoIMUSystemModel::MeasurementMatrix SaitoIMUSystemModel::get_measurement(
 
   RotationMatrix rotation_matrix;
 
+  m_t calculated_phi = do_arctan(a_y, a_z);
+  m_t calculated_theta = do_arctan(-a_x, sqrt(pow(a_y, 2) + pow(a_z, 2)));
+
+  /*
   m_t cos_theta = do_cos(theta);
   m_t sin_theta = do_sin(theta);
   m_t sin_phi = do_sin(phi);
   m_t cos_phi = do_cos(phi);
+  */
+  m_t cos_theta = do_cos(calculated_theta);
+  m_t sin_theta = do_sin(calculated_theta);
+  m_t sin_phi = do_sin(calculated_phi);
+  m_t cos_phi = do_cos(calculated_phi);
+
 
   rotation_matrix(0, 0) = cos_theta;
   rotation_matrix(0, 1) = sin_phi * sin_theta;
@@ -152,7 +163,7 @@ SaitoIMUSystemModel::MeasurementMatrix SaitoIMUSystemModel::get_measurement(
   SaitoIMUSystemModel::SensorDataMatrix rotated_magnetometer =
       rotation_matrix * magnetometer;
 
-  const m_t& rotated_m_y = -1 * rotated_magnetometer(1, 0);
+  const m_t& rotated_m_y = rotated_magnetometer(1, 0);
   const m_t& rotated_m_x = rotated_magnetometer(0, 0);
 
   const m_t new_psi = do_arctan(rotated_m_y, rotated_m_x);
@@ -167,7 +178,6 @@ SaitoIMUSystemModel::MeasurementMatrix
 SaitoIMUSystemModel::get_expected_measurment(
     const SaitoIMUSystemModel::StateMatrix& state) {
   SaitoIMUSystemModel::MeasurementMatrix expected_measurement;
-
   const m_t& phi = state(0, 0);
   const m_t& theta = state(1, 0);
   const m_t& psi = state(2, 0);
@@ -177,9 +187,12 @@ SaitoIMUSystemModel::get_expected_measurment(
   const m_t sin_phi = do_sin(phi);
   const m_t cos_phi = do_cos(phi);
 
+  // we expect just gravity acting as acceleration
+  // and hence we rotate gravity to body frame below
   expected_measurement(1, 0) = GRAVITY * (-1 * sin_theta);
   expected_measurement(2, 0) = GRAVITY * sin_phi * cos_theta;
   expected_measurement(3, 0) = GRAVITY * cos_phi * cos_theta;
+  // and heading is a part of our measurement
   expected_measurement(0, 0) = psi;
   return expected_measurement;
 }
@@ -244,18 +257,22 @@ EKFSaitoModel::EstimateAndCovariance EKFSaitoModel::update(
     const SaitoIMUSystemModel::SensorDataMatrix& angular_rotation,
     const SaitoIMUSystemModel::SensorDataMatrix& magnetometer,
     const m_t& delta_t) {
-      
+
   SaitoIMUSystemModel::SensorDataMatrix transformed_accelerometer = rotate_sensor_to_base_frame(accelerometer);
   SaitoIMUSystemModel::SensorDataMatrix transformed_angular_rotation = rotate_sensor_to_base_frame(angular_rotation);
   SaitoIMUSystemModel::SensorDataMatrix transformed_magnetometer = rotate_sensor_to_base_frame(magnetometer);
-  
+
   SaitoIMUSystemModel::MeasurementMatrix expected_measurement =
       system_model_ptr_->get_expected_measurment(
           estimate_and_cov.state_estimate);
 
+  //std::cout << "state matrix" << std::endl;
+  //std::cout << estimate_and_cov.state_estimate << std::endl;
   SaitoIMUSystemModel::MeasurementMatrix measurement =
       system_model_ptr_->get_measurement(estimate_and_cov.state_estimate,
                                          transformed_accelerometer, transformed_magnetometer);
+  //std::cout << "expected measurement:\n" << expected_measurement << std::endl;
+  //std::cout << "measurement:\n" << measurement << std::endl;
 
   SaitoIMUSystemModel::MeasurementMatrix error_vs_estimate =
       measurement - expected_measurement;
@@ -277,8 +294,8 @@ EKFSaitoModel::EstimateAndCovariance EKFSaitoModel::update(
 
   SaitoIMUSystemModel::StateMatrix mu_t_given_t =
       estimate_and_cov.state_estimate + error_scaling * error_vs_estimate;
-  std::cout << "mu t given t " << std::endl;
-  std::cout << mu_t_given_t << std::endl;
+  //std::cout << "mu t given t " << std::endl;
+  //std::cout << mu_t_given_t << std::endl;
   SaitoIMUSystemModel::StateCovarianceMatrix sigma_t_given_t =
       estimate_and_cov.covariance -
       error_scaling * (c_matrix * estimate_and_cov.covariance);
